@@ -1,0 +1,32 @@
+service: decrypt-lambda
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: provided.al2
+  architecture: arm64
+
+  iam:
+    role:
+      name: decrypt-lambda-role
+      statements:
+        - Effect: Allow
+          Action:
+            - kms:*
+          Resource: "*"
+
+package:
+  exclude:
+    - ./**`
+  include:
+    - ./bootstrap
+
+functions:
+  decrypt:
+    handler: bootstrap
+    events:
+      - http:
+          path: /decrypt
+          method: post
+          cors:
+            origin: '*'
