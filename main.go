@@ -7,12 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strings"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
-	"strings"
 )
 
 type Response struct {
@@ -45,10 +46,7 @@ func Decrypt(encrypted string, key []byte) ([]byte, error) {
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-
-	headers := map[string]string{
-		"Access-Control-Allow-Origin": "*",
-	}
+	headers := map[string]string{"Access-Control-Allow-Origin": "*"}
 	str := event.Body
 	strsplit := strings.Split(str, ":")
 	if len(strsplit) < 5 {
@@ -96,7 +94,6 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	response := Response{
 		Message: string(decrypted),
 	}
-
 	responseBody, err := json.Marshal(&response)
 	if err != nil {
 		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Error marshalling the response body", Headers: headers}, nil
