@@ -21,3 +21,7 @@ vendor
 *.out
 
 .DS_Store
+
+bootstrap
+
+.serverless
