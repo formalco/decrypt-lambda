@@ -19,29 +19,29 @@ type FormalEncryptedData struct {
 	KmsKeyRegion  string `json:"kmsKeyRegion"`
 }
 
-func decryptString(encrypted string, key []byte) ([]byte, error) {
+func decryptString(encrypted string, key []byte) (string, error) {
 	enc, err := base64.StdEncoding.DecodeString(encrypted)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	nonceSize := aesGCM.NonceSize()
 	if len(enc) < nonceSize {
-		return nil, errors.New("data not encrypted or not encrypted with a nonce")
+		return "", errors.New("data not encrypted or not encrypted with a nonce")
 	}
 	nonce, ciphertext := enc[:nonceSize], enc[nonceSize:]
 	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return plaintext, nil
+	return string(plaintext), nil
 }
 
 func decryptDataKey(kmsKeyRegion, kmsKeyId string, encryptedKey []byte) ([]byte, error) {
