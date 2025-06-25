@@ -1,15 +1,17 @@
 package main
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
+	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 )
 
 type FormalEncryptedData struct {
@@ -44,21 +46,22 @@ func decryptString(encrypted string, key []byte) (string, error) {
 	return string(plaintext), nil
 }
 
-func decryptDataKey(kmsKeyRegion, kmsKeyId string, encryptedKey []byte) ([]byte, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(string(kmsKeyRegion)),
-	})
+func decryptDataKey(ctx context.Context, kmsKeyRegion, kmsKeyId string, encryptedKey []byte) ([]byte, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(kmsKeyRegion))
 	if err != nil {
 		return nil, err
 	}
+	if os.Getenv("DEV_AWS_ENDPOINT") != "" {
+		cfg.BaseEndpoint = aws.String(os.Getenv("DEV_AWS_ENDPOINT"))
+	}
 
-	svc := kms.New(sess, &aws.Config{Region: aws.String(string(kmsKeyRegion))})
+	svc := kms.NewFromConfig(cfg)
 	input := &kms.DecryptInput{
 		CiphertextBlob: encryptedKey,
 		KeyId:          aws.String(string(kmsKeyId)),
 	}
 
-	result, err := svc.Decrypt(input)
+	result, err := svc.Decrypt(ctx, input)
 	if err != nil {
 		return nil, err
 	}
