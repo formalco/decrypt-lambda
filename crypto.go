@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -50,6 +51,10 @@ func decryptDataKey(kmsKeyRegion, kmsKeyId string, encryptedKey []byte) ([]byte,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if os.Getenv("DEV_AWS_ENDPOINT") != "" {
+		sess.Config.Endpoint = aws.String(os.Getenv("DEV_AWS_ENDPOINT"))
 	}
 
 	svc := kms.New(sess, &aws.Config{Region: aws.String(string(kmsKeyRegion))})
