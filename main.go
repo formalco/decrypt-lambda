@@ -31,7 +31,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	log.Debug().Msgf("Parsed body: %+v", parsed)
 
-	dataKey, err := decryptDataKey(ctx, parsed.KmsKeyRegion, parsed.KmsKeyId, []byte(parsed.EncryptedKey))
+	dataKey, err := decryptDataKey(parsed.KmsKeyRegion, parsed.KmsKeyId, []byte(parsed.EncryptedKey))
 	if err != nil {
 		log.Error().Err(err).Msg("Error happen in decryptDataKey")
 		return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error(), Headers: headers}, nil
