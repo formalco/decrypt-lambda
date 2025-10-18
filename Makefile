@@ -6,5 +6,9 @@ build:
 clean:
 	rm -rf ./bin bootstrap
 
-deploy: clean build
-	sls deploy --verbose
+deploy-sls: clean build
+	cd serverless && sls deploy --verbose
+
+deploy-terraform: clean build
+	zip bootstrap.zip bootstrap
+	cd terraform && terraform init && terraform apply
