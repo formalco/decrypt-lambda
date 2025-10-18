@@ -102,7 +102,6 @@ terraform destroy
 | `function_name` | Name of the Lambda function | `decrypt-lambda` |
 | `stage_name` | API Gateway stage name | `prod` |
 | `kms_key_arn` | ARN for KMS key we're using to decrypt | `` |
-| `lambda_environment_variables` | Environment variables for Lambda | `{}` |
 | `log_retention_days` | CloudWatch log retention in days | `14` |
 
 ## Outputs
