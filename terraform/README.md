@@ -2,8 +2,7 @@
 
 This directory contains Terraform configurations to deploy the decrypt Lambda function with an API Gateway in a private subnet within your VPC.
 
-This deployment will put the API Gateway and Lambda in a private subnet. Although we recommend accessing the resulting
-API Gateway decryptor URI via a VPN.
+This deployment will put the API Gateway and Lambda in a private subnet. We recommend accessing the resulting API Gateway decryptor URI via a VPN.
 
 ## Prerequisites
 
