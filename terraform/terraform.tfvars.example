@@ -7,5 +7,9 @@ stage_name    = "prod"
 cors_origin   = "https://app.joinformal.com"
 kms_key_arn   = ""
 
+# VPC Configuration for private subnet deployment
+vpc_id             = "vpc-xxxxxxxxx"
+private_subnet_id = "subnet-xxxxxxxxx" # This private subnet needs to be part of the VPC.
+
 # Optional: Customize CloudWatch log retention
 # log_retention_days = 14

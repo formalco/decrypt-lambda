@@ -53,6 +53,28 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
+  role       = aws_iam_role.decrypt_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_security_group" "lambda_sg" {
+  name        = "${var.function_name}-lambda-sg"
+  description = "Security group for decrypt Lambda function"
+  vpc_id      = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.function_name}-lambda-sg"
+  }
+}
+
 resource "aws_lambda_function" "decrypt" {
   filename         = "../bootstrap.zip"
   function_name    = var.function_name
@@ -65,6 +87,11 @@ resource "aws_lambda_function" "decrypt" {
   environment {
     variables = {}
   }
+
+  vpc_config {
+    subnet_ids         = [var.private_subnet_id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "decrypt_lambda_logs" {
@@ -72,9 +99,80 @@ resource "aws_cloudwatch_log_group" "decrypt_lambda_logs" {
   retention_in_days = var.log_retention_days
 }
 
+data "aws_vpc" "selected" {
+  id = var.vpc_id
+}
+
+resource "aws_security_group" "apigw_endpoint_sg" {
+  name        = "${var.function_name}-apigw-endpoint-sg"
+  description = "Security group for API Gateway VPC endpoint"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "HTTPS from VPC CIDR"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.selected.cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.function_name}-apigw-endpoint-sg"
+  }
+}
+
+resource "aws_vpc_endpoint" "apigw_endpoint" {
+  vpc_id              = var.vpc_id
+  service_name        = "com.amazonaws.${var.aws_region}.execute-api"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids         = [var.private_subnet_id]
+  security_group_ids = [aws_security_group.apigw_endpoint_sg.id]
+
+  tags = {
+    Name = "${var.function_name}-apigw-endpoint"
+  }
+}
+
+# Data source to get details of VPC endpoint ENIs
+data "aws_network_interface" "vpc_endpoint_enis" {
+  count = length(tolist(aws_vpc_endpoint.apigw_endpoint.network_interface_ids))
+  id    = tolist(aws_vpc_endpoint.apigw_endpoint.network_interface_ids)[count.index]
+}
+
 resource "aws_api_gateway_rest_api" "decrypt_api" {
   name        = "${var.function_name}-api"
   description = "API Gateway for decrypt Lambda function"
+
+  endpoint_configuration {
+    types            = ["PRIVATE"]
+    vpc_endpoint_ids = [aws_vpc_endpoint.apigw_endpoint.id]
+  }
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "*"
+        Condition = {
+          StringEquals = {
+            "aws:SourceVpce" = aws_vpc_endpoint.apigw_endpoint.id
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_api_gateway_resource" "decrypt_resource" {

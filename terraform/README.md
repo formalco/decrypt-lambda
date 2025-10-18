@@ -1,12 +1,15 @@
 # Terraform Deployment Guide
 
-This directory contains Terraform configurations to deploy the decrypt Lambda function with API Gateway, equivalent to the serverless configuration.
+This directory contains Terraform configurations to deploy the decrypt Lambda function with an API Gateway in a private subnet within your VPC.
+
+This deployment will put the API Gateway and Lambda in a private subnet. Although we recommend accessing the resulting
+API Gateway decryptor URI via a VPN.
 
 ## Prerequisites
 
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- AWS CLI configured with appropriate credentials
-- The `bootstrap` binary compiled and ready for deployment
+- [Terraform](https://www.terraform.io/downloads.html)s
+- An AWS VPC with both a public and private subnet.
+- AWS Credentials with the ability to deploy API Gateways, Lambdas, EC2 instances and the associated networking.
 
 ## Files
 
@@ -15,94 +18,63 @@ This directory contains Terraform configurations to deploy the decrypt Lambda fu
 - `outputs.tf` - Output definitions
 - `terraform.tfvars.example` - Example variables file
 
-## Deployment Steps
+## Deployment steps
 
-### 1. Prepare the Lambda Package
-
-Before deploying, you need to package the `bootstrap` binary:
-
-```bash
-# Compile your Go code if not already done
-# GOOS=linux GOARCH=arm64 go build -o bootstrap main.go crypto.go
-
-# Create a zip file for Lambda
-zip bootstrap.zip bootstrap
-```
-
-### 2. Initialize Terraform
-
-```bash
-terraform init
-```
-
-### 3. Configure Variables (Optional)
-
-Copy the example variables file and customize if needed:
+1. First, copy the example variables and update them.
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your preferred values
 ```
 
-### 4. Plan the Deployment
-
-Review what resources will be created:
+2. Deploy the Lambda and API Gateway. Review the plan and apply.
 
 ```bash
-terraform plan
+make deploy-terraform # Requires AWS Credentials
 ```
-
-### 5. Apply the Configuration
-
-Deploy the infrastructure:
-
-```bash
-terraform apply
-```
-
-Type `yes` when prompted to confirm.
-
-### 6. Get the API Endpoint
-
-After deployment, the API Gateway URL will be displayed:
-
-```bash
-terraform output api_gateway_url
-```
-
 ## Resources Created
 
-- **Lambda Function**: `decrypt-lambda` (or custom name)
-- **IAM Role**: `decrypt-lambda-role` with KMS decrypt permissions
-- **API Gateway**: REST API with POST /decrypt endpoint
-- **CORS Configuration**: Configured for https://app.joinformal.com (or custom origin)
+- **Lambda Function**: `decrypt-lambda` (or custom name) deployed in private subnets
+- **IAM Role**: `decrypt-lambda-role` with KMS decrypt and VPC access permissions
+- **API Gateway**: Private REST API with POST /decrypt endpoint
+- **VPC Endpoint**: Interface endpoint for API Gateway execute-api service
+- **Security Groups**:
+  - Lambda security group with egress to all
+  - API Gateway VPC endpoint security group with ingress on port 443 from VPC CIDR
+- **CORS Configuration**: Configured for https://app.joinformal.coms
 - **CloudWatch Log Group**: For Lambda function logs
 
-## Updating the Lambda Function
+## VPC Configuration
 
-After making changes to your code:
+This deployment creates a **private API Gateway** accessible only from within the VPC. The Lambda function runs in private subnets and connects to API Gateway through a VPC endpoint.
 
-1. Rebuild the bootstrap binary
-2. Recreate the zip file: `zip bootstrap.zip bootstrap`
-3. Run `terraform apply` to update the Lambda function
+### VPC Requirements
 
-## Cleanup
+- **VPC ID**: An existing VPC where resources will be deployed
+- **Private Subnets**: At least 2 private subnets (recommended for high availability)
+  - Subnets should have routes to a NAT Gateway if the Lambda needs internet access
+  - Subnets should be in different Availability Zones for resilience
+- **VPC Endpoints**: The terraform configuration automatically creates the required API Gateway execute-api endpoint
 
-To destroy all resources:
+### Network Architecture
 
-```bash
-terraform destroy
 ```
+Client (within VPC) → VPC Endpoint (execute-api) → Private API Gateway → Lambda (in private subnet)
+```
+
+The API Gateway is not accessible from the public internet. We recommend requiring access through a VPN so that users can access the API Gateway from their browsers.
 
 ## Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `aws_region` | AWS region to deploy resources | `us-east-1` |
-| `function_name` | Name of the Lambda function | `decrypt-lambda` |
-| `stage_name` | API Gateway stage name | `prod` |
-| `kms_key_arn` | ARN for KMS key we're using to decrypt | `` |
-| `log_retention_days` | CloudWatch log retention in days | `14` |
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `aws_region` | AWS region to deploy resources | `us-east-1` | No |
+| `function_name` | Name of the Lambda function | `decrypt-lambda` | No |
+| `stage_name` | API Gateway stage name | `prod` | No |
+| `kms_key_arn` | ARN for KMS key we're using to decrypt | - | Yes |
+| `vpc_id` | VPC ID where Lambda and API Gateway will be deployed | - | Yes |
+| `private_subnet_ids` | List of private subnet IDs (recommend 2+) | - | Yes |
+| `log_retention_days` | CloudWatch log retention in days | `14` | No |
 
 ## Outputs
 
@@ -114,3 +86,7 @@ terraform destroy
 | `lambda_function_arn` | Lambda function ARN |
 | `lambda_role_arn` | Lambda IAM role ARN |
 | `cloudwatch_log_group_name` | CloudWatch Log Group name |
+| `vpc_endpoint_id` | VPC Endpoint ID for API Gateway |
+| `vpc_endpoint_dns_entries` | DNS entries for the VPC endpoint |
+| `vpc_endpoint_private_ips` | Private IP addresses of the VPC endpoint|
+| `access_instructions` | Instructions for accessing the private API |
