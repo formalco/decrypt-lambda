@@ -6,8 +6,8 @@ This deployment will put the API Gateway and Lambda in a private subnet. We reco
 
 ## Prerequisites
 
-- [Terraform](https://www.terraform.io/downloads.html)s
-- An AWS VPC with both a public and private subnet.
+- [Terraform](https://www.terraform.io/downloads.html)
+- An AWS VPC with a private subnet.
 - AWS Credentials with the ability to deploy API Gateways, Lambdas, EC2 instances and the associated networking.
 
 ## Files
