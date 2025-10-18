@@ -25,3 +25,15 @@ vendor
 bootstrap
 
 .serverless
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.tfplan
+*.tfplan.*
+
+# Lambda package
+bootstrap.zip

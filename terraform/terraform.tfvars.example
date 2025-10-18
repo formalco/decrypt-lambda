@@ -1,0 +1,11 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and customize the values
+
+aws_region    = "us-east-1"
+function_name = "decrypt-lambda"
+stage_name    = "prod"
+cors_origin   = "https://app.joinformal.com"
+kms_key_arn   = ""
+
+# Optional: Customize CloudWatch log retention
+# log_retention_days = 14
