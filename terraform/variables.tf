@@ -26,3 +26,13 @@ variable "kms_key_arn" {
   description = "ARN of the KMS key to use for decrypting data"
   type        = string
 }
+
+variable "vpc_id" {
+  description = "VPC ID where Lambda and API Gateway will be deployed"
+  type        = string
+}
+
+variable "private_subnet_id" {
+  description = "Private subnet ID for Lambda and API Gateway VPC endpoint"
+  type        = string
+}
