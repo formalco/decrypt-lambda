@@ -213,7 +213,7 @@ resource "aws_api_gateway_integration_response" "decrypt_integration_response" {
   status_code = aws_api_gateway_method_response.decrypt_post_response.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "'https://app.joinformal.com'"
+    "method.response.header.Access-Control-Allow-Origin" = "'https://app.formal.ai'"
   }
 
   depends_on = [aws_api_gateway_integration.decrypt_lambda_integration]
@@ -259,7 +259,7 @@ resource "aws_api_gateway_integration_response" "decrypt_options_integration_res
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'https://app.joinformal.com'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://app.formal.ai'"
   }
 
   depends_on = [aws_api_gateway_integration.decrypt_options_integration]

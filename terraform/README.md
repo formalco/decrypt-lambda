@@ -40,7 +40,7 @@ make deploy-terraform # Requires AWS Credentials
 - **Security Groups**:
   - Lambda security group with egress to all
   - API Gateway VPC endpoint security group with ingress on port 443 from VPC CIDR
-- **CORS Configuration**: Configured for https://app.joinformal.coms
+- **CORS Configuration**: Configured for https://app.formal.ai
 - **CloudWatch Log Group**: For Lambda function logs
 
 ## VPC Configuration
