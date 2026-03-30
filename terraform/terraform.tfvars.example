@@ -4,7 +4,7 @@
 aws_region    = "us-east-1"
 function_name = "decrypt-lambda"
 stage_name    = "prod"
-cors_origin   = "https://app.joinformal.com"
+cors_origin   = "https://app.formal.ai"
 kms_key_arn   = ""
 
 # VPC Configuration for private subnet deployment

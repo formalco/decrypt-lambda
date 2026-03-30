@@ -29,4 +29,4 @@ functions:
           path: /decrypt
           method: post
           cors:
-            origin: https://app.joinformal.com
+            origin: https://app.formal.ai

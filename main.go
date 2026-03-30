@@ -15,7 +15,7 @@ type Response struct {
 
 var (
 	headers = map[string]string{
-		"Access-Control-Allow-Origin":  "https://app.joinformal.com",
+		"Access-Control-Allow-Origin":  "https://app.formal.ai",
 		"Access-Control-Allow-Methods": "OPTIONS,POST",
 	}
 )
