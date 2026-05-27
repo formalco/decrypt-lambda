@@ -13,6 +13,7 @@ provider:
         - Effect: Allow
           Action:
             - kms:Decrypt
+            - kms:DescribeKey
           Resource: "*"
 
 package:

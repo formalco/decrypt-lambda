@@ -5,19 +5,42 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 )
 
+var keySpecCache sync.Map
+
 type FormalEncryptedData struct {
 	EncryptedData string `json:"encryptedData"`
 	EncryptedKey  string `json:"encryptedKey"`
 	KmsKeyId      string `json:"kmsKeyId"`
 	KmsKeyRegion  string `json:"kmsKeyRegion"`
+}
+
+func resolveEncryptionAlgorithm(svc *kms.KMS, kmsKeyId string) (string, error) {
+	if v, ok := keySpecCache.Load(kmsKeyId); ok {
+		return v.(string), nil
+	}
+	out, err := svc.DescribeKey(&kms.DescribeKeyInput{KeyId: aws.String(kmsKeyId)})
+	if err != nil {
+		return "", fmt.Errorf("DescribeKey: %w", err)
+	}
+	alg := ""
+	for _, a := range out.KeyMetadata.EncryptionAlgorithms {
+		if a != nil && *a == kms.EncryptionAlgorithmSpecRsaesOaepSha256 {
+			alg = kms.EncryptionAlgorithmSpecRsaesOaepSha256
+			break
+		}
+	}
+	keySpecCache.Store(kmsKeyId, alg)
+	return alg, nil
 }
 
 func decryptString(encrypted string, key []byte) (string, error) {
@@ -58,9 +81,18 @@ func decryptDataKey(kmsKeyRegion, kmsKeyId string, encryptedKey []byte) ([]byte,
 	}
 
 	svc := kms.New(sess, &aws.Config{Region: aws.String(string(kmsKeyRegion))})
+
+	alg, err := resolveEncryptionAlgorithm(svc, kmsKeyId)
+	if err != nil {
+		return nil, err
+	}
+
 	input := &kms.DecryptInput{
 		CiphertextBlob: encryptedKey,
-		KeyId:          aws.String(string(kmsKeyId)),
+		KeyId:          aws.String(kmsKeyId),
+	}
+	if alg != "" {
+		input.EncryptionAlgorithm = aws.String(alg)
 	}
 
 	result, err := svc.Decrypt(input)

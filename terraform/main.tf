@@ -40,7 +40,8 @@ resource "aws_iam_role_policy" "kms_decrypt_policy" {
       {
         Effect = "Allow"
         Action = [
-          "kms:Decrypt"
+          "kms:Decrypt",
+          "kms:DescribeKey"
         ]
         Resource = var.kms_key_arn
       }
