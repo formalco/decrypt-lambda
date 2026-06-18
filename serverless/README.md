@@ -5,6 +5,7 @@
 - A Serverless license
 - The Serverless CLI (`npm i -E serverless@4.21.1 -g`)
 - AWS Credentials with the ability to deploy API Gateways, Lambdas, EC2 instances and the associated networking.
+- `KMS_KEY_ARN` set to the ARN of your decryption key. The Lambda role is scoped to `kms:Decrypt` on this key only.
 
 
 ## A note about private deployments
@@ -16,6 +17,7 @@ This configuration deploys an AWS Lambda and API Gateway on the public internet.
 To deploy using the Serverless framework, run the following commands:
 ```
 npm i -E serverless@4.21.1 -g
+export KMS_KEY_ARN=arn:aws:kms:<region>:<account>:key/<id>
 make deploy-sls
 ```
 
