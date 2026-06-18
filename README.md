@@ -1,6 +1,8 @@
 # Decryptor
 
-Reference decryptor for Formal's field-level log encryption. Formal encrypts sensitive log fields client-side and never holds or access the private key, so you deploy this service in your own infrastructure to let users decrypt those fields on demand from their browser.
+Reference decryptor for Formal's field-level log encryption.
+
+Formal encrypts sensitive log fields client-side and never holds or access the private key, so you deploy this service in your own infrastructure to let users decrypt those fields on demand from their browser.
 
 Once deployed, use the endpoint URL as the `decryptor_uri` on a Formal encryption key.
 
