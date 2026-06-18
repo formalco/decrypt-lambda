@@ -1,40 +1,36 @@
-# Decrypt Lambda
+# Decryptor
 
-Reference decryptor for Formal's field-level log encryption. Formal encrypts sensitive log fields client-side and never holds the private key, so you deploy this Lambda in your own infrastructure to let users decrypt those fields on demand from their browser.
+Reference decryptor for Formal's field-level log encryption. Formal encrypts sensitive log fields client-side and never holds or access the private key, so you deploy this service in your own infrastructure to let users decrypt those fields on demand from their browser.
 
-Once deployed, use the API Gateway URL as the `decryptor_uri` on a Formal encryption key.
+Once deployed, use the endpoint URL as the `decryptor_uri` on a Formal encryption key.
 
-**Note: we highly encourage making sure the API Gateway is only accessible via a VPN to prevent users outside of your organization from making requests to the /decrypt endpoint.**
+**Note: we highly encourage making sure the endpoint is only accessible via a VPN to prevent users outside of your organization from making requests to the `/decrypt` endpoint.**
 
 ## How it works
 
-Encrypted fields are [JWE](https://datatracker.ietf.org/doc/html/rfc7516) compact tokens (`alg=RSA-OAEP-256`, `enc=A256GCM`): a fresh AES-256-GCM content key is wrapped per record with the RSA public half of your KMS key. The JWE `kid` is a key URI of the form `<scheme>://<keyID>`, e.g. `aws-kms://arn:aws:kms:us-east-1:123456789012:key/abcd`.
+Encrypted fields are [JWE](https://datatracker.ietf.org/doc/html/rfc7516) compact tokens (`alg=RSA-OAEP-256`, `enc=A256GCM`): a fresh AES-256-GCM content key is wrapped per record with the RSA public half of your KMS key. The JWE `kid` is a key URI of the form `<scheme>://<keyID>`, e.g. `aws-kms://arn:aws:kms:us-east-1:123456789012:key/abcd` or `gcp-kms://projects/p/locations/l/keyRings/r/cryptoKeys/k/cryptoKeyVersions/1`.
 
-On each request the Lambda:
+The Formal Console calls the decryptor from the user's browser: it `POST`s the JWE token as the raw request body to your `decryptor_uri` and reads back `{"message": "<plaintext>"}`.
+
+For each request the decryptor:
 
 1. parses the JWE and reads the `kid`;
-2. picks a provider from the URI scheme and asks it to unwrap the content key (for AWS, `kms:Decrypt` with `RSAES_OAEP_SHA_256`);
+2. picks a provider from the URI scheme and asks it to unwrap the content key (AWS KMS `Decrypt` or GCP KMS `AsymmetricDecrypt`, both RSA-OAEP-256);
 3. decrypts the content with the unwrapped key and returns the plaintext.
 
-The Lambda holds no private key material; only the KMS unwrap can recover the content key.
+The decryptor holds no private key material; only the KMS unwrap can recover the content key.
 
 ## Deployment
 
-There are three deployment methods: Terraform, Serverless (via Cloudformation), and Docker.
+The decryptor is one binary. It can run anywhere you can run a container.
 
-### Deploying via Terraform (Recommended)
+The root `Dockerfile` builds an image that runs as a standalone HTTP server or a Lambda function.
 
-To deploy via Terraform, we recommend incorporating the configuration template provided in the `terraform` directory into your Terraform setup.
-To deploy the configuration as-is, run `make deploy-terraform` with your AWS credentials and with the Terraform CLI installed. This deployment deploys the API Gateway and Lambda in a *private* subnet within your VPC.
+The `deploy/` directory has a few examples:
 
-### Deploying via Serverless
-
-To deploy via Serverless, run `make deploy-sls` with your Serverless credentials. Note: you will need a Serverless licesnse, AWS Account, and the Serverless CLI installed. This deployment deploys the API Gateway and Lambda *publicly.*
-
-### Deploying via Docker
-
-To deploy via Docker, use the provided Dockerfile to build and push to an ECR repo.
-The resulting container image can be used to deploy a lambda function [as a container image](https://docs.aws.amazon.com/lambda/latest/dg/go-image.html#go-image-other).
+- [AWS Lambda via Terraform](deploy/aws-lambda-terraform/README.md)
+- [AWS Lambda via Serverless](deploy/aws-lambda-serverless/README.md)
+- [GCP Cloud Run via Terraform](deploy/gcp-cloudrun-terraform/README.md)
 
 ## Tests
 

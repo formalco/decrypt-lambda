@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "function_name" {
   description = "Name of the Lambda function"
   type        = string
-  default     = "drews-decrypt-lambda"
+  default     = "decryptor"
 }
 
 variable "stage_name" {
