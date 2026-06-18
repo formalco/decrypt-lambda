@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY .. .
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o main main.go
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o main .
 
 ############################
 # STEP 2 build a small image

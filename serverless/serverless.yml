@@ -13,8 +13,7 @@ provider:
         - Effect: Allow
           Action:
             - kms:Decrypt
-            - kms:DescribeKey
-          Resource: "*"
+          Resource: ${env:KMS_KEY_ARN}
 
 package:
   exclude:

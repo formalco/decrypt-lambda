@@ -1,12 +1,13 @@
 module decrypt-lambda
 
-go 1.22
+go 1.24.0
 
 toolchain go1.24.2
 
 require (
 	github.com/aws/aws-lambda-go v1.41.0
 	github.com/aws/aws-sdk-go v1.55.7
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/rs/zerolog v1.31.0
 )
 

@@ -7,6 +7,8 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/rs/zerolog/log"
+
+	_ "decrypt-lambda/provider/awskms"
 )
 
 type Response struct {
@@ -23,36 +25,23 @@ var (
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	log.Debug().Msgf("Received event: %s", event.Body)
 
-	parsed, err := parseFormalEncryptedData(event.Body)
+	obj, err := parseJWE(event.Body)
 	if err != nil {
-		log.Error().Err(err).Msg("Error happen in parseFormalEncryptedData")
-		return events.APIGatewayProxyResponse{StatusCode: 400, Body: err.Error(), Headers: headers}, nil
+		log.Error().Err(err).Msg("failed to parse JWE from request body")
+		return events.APIGatewayProxyResponse{StatusCode: 400, Body: "request body is not a valid JWE", Headers: headers}, nil
 	}
 
-	log.Debug().Msgf("Parsed body: %+v", parsed)
-
-	dataKey, err := decryptDataKey(parsed.KmsKeyRegion, parsed.KmsKeyId, []byte(parsed.EncryptedKey))
+	decrypted, err := decryptJWE(ctx, obj)
 	if err != nil {
-		log.Error().Err(err).Msg("Error happen in decryptDataKey")
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error(), Headers: headers}, nil
+		log.Error().Err(err).Msg("failed to decrypt JWE")
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "could not decrypt the JWE", Headers: headers}, nil
 	}
 
-	decrypted, err := decryptString(parsed.EncryptedData, dataKey)
+	responseBody, err := json.Marshal(&Response{Message: decrypted})
 	if err != nil {
-		log.Error().Err(err).Msg("Error happen in decryptString")
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error(), Headers: headers}, nil
+		log.Error().Err(err).Msg("failed to marshal decrypt response")
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "internal error", Headers: headers}, nil
 	}
-
-	log.Debug().Msgf("Decrypted data: %s", decrypted)
-
-	response := Response{Message: decrypted}
-	responseBody, err := json.Marshal(&response)
-	if err != nil {
-		log.Error().Err(err).Msg("Error happen in json.Marshal")
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Error marshalling the response body", Headers: headers}, nil
-	}
-
-	log.Debug().Msgf("Response body: %s", responseBody)
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,

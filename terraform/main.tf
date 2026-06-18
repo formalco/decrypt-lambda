@@ -38,11 +38,8 @@ resource "aws_iam_role_policy" "kms_decrypt_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt",
-          "kms:DescribeKey"
-        ]
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
         Resource = var.kms_key_arn
       }
     ]
