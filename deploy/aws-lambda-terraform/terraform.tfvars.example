@@ -2,7 +2,7 @@
 # Copy this file to terraform.tfvars and customize the values
 
 aws_region    = "us-east-1"
-function_name = "decrypt-lambda"
+function_name = "decryptor"
 stage_name    = "prod"
 cors_origin   = "https://app.formal.ai"
 kms_key_arn   = ""

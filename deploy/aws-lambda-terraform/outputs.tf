@@ -20,12 +20,12 @@ output "lambda_function_arn" {
 
 output "lambda_role_arn" {
   description = "ARN of the Lambda IAM role"
-  value       = aws_iam_role.decrypt_lambda_role.arn
+  value       = aws_iam_role.decryptor_role.arn
 }
 
 output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch Log Group"
-  value       = aws_cloudwatch_log_group.decrypt_lambda_logs.name
+  value       = aws_cloudwatch_log_group.decryptor_logs.name
 }
 
 output "vpc_endpoint_id" {

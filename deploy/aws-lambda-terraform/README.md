@@ -1,12 +1,13 @@
-# Terraform Deployment Guide
+# AWS Lambda via Terraform
 
-This directory contains Terraform configurations to deploy the decrypt Lambda function with an API Gateway in a private subnet within your VPC.
+This directory contains Terraform configurations to deploy the decryptor function with an API Gateway in a private subnet within your VPC.
 
 This deployment will put the API Gateway and Lambda in a private subnet. We recommend accessing the resulting API Gateway decryptor URI via a VPN.
 
 ## Prerequisites
 
 - [Terraform](https://www.terraform.io/downloads.html)
+- Go (to build the Lambda binary)
 - An AWS VPC with a private subnet.
 - AWS Credentials with the ability to deploy API Gateways, Lambdas, EC2 instances and the associated networking.
 
@@ -26,15 +27,18 @@ cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your preferred values
 ```
 
-2. Deploy the Lambda and API Gateway. Review the plan and apply.
+2. From the repo root, build and zip the Lambda binary, then apply:
 
 ```bash
-make deploy-terraform # Requires AWS Credentials
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bootstrap .
+zip bootstrap.zip bootstrap
+cd deploy/aws-lambda-terraform
+terraform init && terraform apply
 ```
 ## Resources Created
 
-- **Lambda Function**: `decrypt-lambda` (or custom name) deployed in private subnets
-- **IAM Role**: `decrypt-lambda-role` with KMS decrypt and VPC access permissions
+- **Lambda Function**: `decryptor` (or custom name) deployed in private subnets
+- **IAM Role**: `decryptor-role` with KMS decrypt and VPC access permissions
 - **API Gateway**: Private REST API with POST /decrypt endpoint
 - **VPC Endpoint**: Interface endpoint for API Gateway execute-api service
 - **Security Groups**:
@@ -68,7 +72,7 @@ The API Gateway is not accessible from the public internet. We recommend requiri
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `aws_region` | AWS region to deploy resources | `us-east-1` | No |
-| `function_name` | Name of the Lambda function | `decrypt-lambda` | No |
+| `function_name` | Name of the Lambda function | `decryptor` | No |
 | `stage_name` | API Gateway stage name | `prod` | No |
 | `kms_key_arn` | ARN for KMS key we're using to decrypt | - | Yes |
 | `vpc_id` | VPC ID where Lambda and API Gateway will be deployed | - | Yes |

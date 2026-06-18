@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/kms"
 
-	"decrypt-lambda/provider"
+	"decryptor/provider"
 )
 
 const scheme = "aws-kms"

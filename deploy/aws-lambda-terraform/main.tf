@@ -13,7 +13,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "aws_iam_role" "decrypt_lambda_role" {
+resource "aws_iam_role" "decryptor_role" {
   name = "${var.function_name}-role"
 
   assume_role_policy = jsonencode({
@@ -32,7 +32,7 @@ resource "aws_iam_role" "decrypt_lambda_role" {
 
 resource "aws_iam_role_policy" "kms_decrypt_policy" {
   name = "kms-decrypt-policy"
-  role = aws_iam_role.decrypt_lambda_role.id
+  role = aws_iam_role.decryptor_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -47,18 +47,18 @@ resource "aws_iam_role_policy" "kms_decrypt_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.decrypt_lambda_role.name
+  role       = aws_iam_role.decryptor_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_vpc_execution" {
-  role       = aws_iam_role.decrypt_lambda_role.name
+  role       = aws_iam_role.decryptor_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_security_group" "lambda_sg" {
   name        = "${var.function_name}-lambda-sg"
-  description = "Security group for decrypt Lambda function"
+  description = "Security group for decryptor function"
   vpc_id      = var.vpc_id
 
   egress {
@@ -74,11 +74,11 @@ resource "aws_security_group" "lambda_sg" {
 }
 
 resource "aws_lambda_function" "decrypt" {
-  filename         = "../bootstrap.zip"
+  filename         = "../../bootstrap.zip"
   function_name    = var.function_name
-  role            = aws_iam_role.decrypt_lambda_role.arn
+  role            = aws_iam_role.decryptor_role.arn
   handler         = "bootstrap"
-  source_code_hash = filebase64sha256("../bootstrap.zip")
+  source_code_hash = filebase64sha256("../../bootstrap.zip")
   runtime         = "provided.al2"
   architectures   = ["arm64"]
 
@@ -92,7 +92,7 @@ resource "aws_lambda_function" "decrypt" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "decrypt_lambda_logs" {
+resource "aws_cloudwatch_log_group" "decryptor_logs" {
   name              = "/aws/lambda/${var.function_name}"
   retention_in_days = var.log_retention_days
 }
@@ -148,7 +148,7 @@ data "aws_network_interface" "vpc_endpoint_enis" {
 
 resource "aws_api_gateway_rest_api" "decrypt_api" {
   name        = "${var.function_name}-api"
-  description = "API Gateway for decrypt Lambda function"
+  description = "API Gateway for decryptor function"
 
   endpoint_configuration {
     types            = ["PRIVATE"]
@@ -195,7 +195,7 @@ resource "aws_api_gateway_method_response" "decrypt_post_response" {
     "method.response.header.Access-Control-Allow-Origin" = true
   }
 }
-resource "aws_api_gateway_integration" "decrypt_lambda_integration" {
+resource "aws_api_gateway_integration" "decryptor_integration" {
   rest_api_id             = aws_api_gateway_rest_api.decrypt_api.id
   resource_id             = aws_api_gateway_resource.decrypt_resource.id
   http_method             = aws_api_gateway_method.decrypt_post.http_method
@@ -214,7 +214,7 @@ resource "aws_api_gateway_integration_response" "decrypt_integration_response" {
     "method.response.header.Access-Control-Allow-Origin" = "'https://app.formal.ai'"
   }
 
-  depends_on = [aws_api_gateway_integration.decrypt_lambda_integration]
+  depends_on = [aws_api_gateway_integration.decryptor_integration]
 }
 
 # Support the OPTION method for CORS preflight
@@ -271,7 +271,7 @@ resource "aws_api_gateway_deployment" "decrypt_deployment" {
       aws_api_gateway_resource.decrypt_resource.id,
       aws_api_gateway_method.decrypt_post.id,
       aws_api_gateway_method.decrypt_options.id,
-      aws_api_gateway_integration.decrypt_lambda_integration.id,
+      aws_api_gateway_integration.decryptor_integration.id,
       aws_api_gateway_integration.decrypt_options_integration.id,
     ]))
   }
@@ -281,7 +281,7 @@ resource "aws_api_gateway_deployment" "decrypt_deployment" {
   }
 
   depends_on = [
-    aws_api_gateway_integration.decrypt_lambda_integration,
+    aws_api_gateway_integration.decryptor_integration,
     aws_api_gateway_integration.decrypt_options_integration,
   ]
 }

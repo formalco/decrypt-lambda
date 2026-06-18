@@ -7,7 +7,7 @@ import (
 
 	jose "github.com/go-jose/go-jose/v4"
 
-	"decrypt-lambda/provider"
+	"decryptor/provider"
 )
 
 // Logs are sealed as compact JWEs: a fresh AES-256-GCM content key (CEK) wrapped

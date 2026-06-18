@@ -1,0 +1,54 @@
+service: decryptor
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: provided.al2
+  architecture: arm64
+
+  # Private REST API: reachable only through the execute-api VPC endpoint below,
+  # never the public internet. The resource policy denies everything else.
+  endpointType: PRIVATE
+  resourcePolicy:
+    - Effect: Allow
+      Principal: '*'
+      Action: execute-api:Invoke
+      Resource:
+        - execute-api:/*
+      Condition:
+        StringEquals:
+          aws:SourceVpce: ${env:VPC_ENDPOINT_ID}
+
+  # Run the Lambda in your private subnets (two for HA).
+  vpc:
+    securityGroupIds:
+      - ${env:SECURITY_GROUP_ID}
+    subnetIds:
+      - ${env:SUBNET_ID_1}
+      - ${env:SUBNET_ID_2}
+
+  iam:
+    role:
+      name: decryptor-role
+      statements:
+        # Scope to your key only: the key ARN comes from the caller-supplied JWE.
+        - Effect: Allow
+          Action:
+            - kms:Decrypt
+          Resource: ${env:KMS_KEY_ARN}
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bootstrap
+
+functions:
+  decrypt:
+    handler: bootstrap
+    events:
+      - http:
+          path: /decrypt
+          method: post
+          cors:
+            origin: https://app.formal.ai
